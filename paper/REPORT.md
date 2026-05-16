@@ -6,6 +6,8 @@ Companion to the [README](./README.md). Where the README documents *what* this a
 **Conversion target:** llama.cpp commit `0253fb21f` (build `b9187`)
 **Source weights:** [txn545/Qwen3.5-122B-A10B-NVFP4](https://huggingface.co/txn545/Qwen3.5-122B-A10B-NVFP4)
 **Author:** Incarnas (publish pipeline, temple-rig)
+**Methodology repo:** [bit-incarnas/nvfp4-mtp-conversions](https://github.com/bit-incarnas/nvfp4-mtp-conversions) (v1.0)
+**PDF version:** [paper/REPORT.pdf](https://github.com/bit-incarnas/nvfp4-mtp-conversions/blob/main/paper/REPORT.pdf) (pandoc-xelatex render of this markdown source)
 
 ---
 
