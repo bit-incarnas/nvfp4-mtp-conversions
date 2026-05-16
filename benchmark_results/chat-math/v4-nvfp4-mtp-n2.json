@@ -1,0 +1,16 @@
+{
+  "label": "v4-nvfp4-mtp-n2",
+  "endpoint": "http://127.0.0.1:11436",
+  "thinking_enabled": true,
+  "task": "gsm8k",
+  "n_total": 5,
+  "n_correct": 2,
+  "accuracy": 0.4,
+  "n_errors": 0,
+  "n_with_thinking_trace": 5,
+  "mean_elapsed_per_q": 12.965457916259766,
+  "mean_completion_tokens": 1603.4,
+  "mean_reasoning_chars": 4430.6,
+  "wall_seconds": 64.8289384841919,
+  "samples_path": "/media/ai/reports/chat-math/v4-nvfp4-mtp-n2.samples.jsonl"
+}
