@@ -42,7 +42,7 @@ If `git apply` rejects due to upstream drift in surrounding code, the patch is s
 
 ## Upstream status
 
-**Not yet filed.** TBD whether to file the PR directly or route the fix to a llama.cpp maintainer for upstreaming. The fix is functionally trivial; the gating question is contributor-policy fit for community-supplied corrections to recently-merged PRs.
+**Filed as [ggml-org/llama.cpp#23237](https://github.com/ggml-org/llama.cpp/pull/23237)** (2026-05-17, awaiting review). Branch `fix/qwen35-mtp-multimodal-bid-coherence` on `bit-incarnas/llama.cpp`. Drop this patch when the PR merges + the next methodology release builds off a post-fix mainline commit (see "Drop trigger" below).
 
 ## Drop trigger
 

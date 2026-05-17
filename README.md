@@ -40,7 +40,7 @@ Local patches required on top of mainline llama.cpp for the current methodology 
 
 | Patch | Applies to | Upstream status |
 | :--- | :--- | :--- |
-| [`patches/qwen35_mtp_bid_fix.patch`](patches/qwen35_mtp_bid_fix.patch) | llama.cpp `0253fb21f`+, multimodal Qwen3.5-MoE NVFP4 sources | Not yet filed -- see [`qwen35_mtp_bid_fix.md`](patches/qwen35_mtp_bid_fix.md) |
+| [`patches/qwen35_mtp_bid_fix.patch`](patches/qwen35_mtp_bid_fix.patch) | llama.cpp `0253fb21f`+, multimodal Qwen3.5-MoE NVFP4 sources | Filed: [ggml-org/llama.cpp#23237](https://github.com/ggml-org/llama.cpp/pull/23237) (awaiting review) -- see [`qwen35_mtp_bid_fix.md`](patches/qwen35_mtp_bid_fix.md) |
 
 ## Bench environment
 
