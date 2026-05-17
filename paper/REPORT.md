@@ -380,11 +380,11 @@ First cold load of the 77 GiB GGUF from NFS took ~226 s. The smoke driver's 300 
 
 ### 6.4 Bench cycle 2: `bench_chat_math.py` missing `datasets` module
 
-Wrong virtualenv. The convert-venv that the bench script invoked has `gguf` + `safetensors` but not `datasets`. The correct venv for HF datasets work is `lm-eval-venv`. Re-ran from there; the gsm8k 5-sample comparison data in §5.5 came from this second pass.
+Wrong virtualenv. The conversion venv that the bench script invoked has `gguf` + `safetensors` but not `datasets`. The correct environment for HF datasets work is one with the lm-eval-harness dependencies. Re-ran from there; the gsm8k 5-sample comparison data in §5.5 came from this second pass.
 
 ### 6.5 Bench cycle 2: `bench_vision.py` not executable
 
-`chmod +x` was missing on the script. Trivially fixed; in the rerun the vision-smoke phase also surfaced that the script needs `Pillow` (which the lm-eval-venv we'd switched to doesn't have), so the smoke didn't actually run the vision rubric. We confirmed the vision compose **loads cleanly** in 70 s, and the mmproj file is byte-identical to v3, so v3's six-image rubric carries over. A future run with a venv that has both `datasets` and `Pillow` would close this.
+`chmod +x` was missing on the script. Trivially fixed; in the rerun the vision-smoke phase also surfaced that the script needs `Pillow` (which the harness environment we'd switched to doesn't have), so the smoke didn't actually run the vision rubric. We confirmed the vision compose **loads cleanly** in 70 s, and the mmproj file is byte-identical to v3, so v3's six-image rubric carries over. A future run with a venv that has both `datasets` and `Pillow` would close this.
 
 ---
 
