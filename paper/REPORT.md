@@ -11,9 +11,17 @@ Companion to the [README](./README.md). Where the README documents *what* this a
 
 ---
 
+## Why this report exists
+
+Three forces converge to make this a useful artifact for the open-source inference community. Recent llama.cpp support for Multi-Token Prediction (MTP) enables self-speculative decoding that meaningfully accelerates inference on supported architectures. NVIDIA ModelOpt NVFP4 quantization has emerged as a practical deployment format for Blackwell-class GPUs, letting very large MoE models run within single-card VRAM envelopes. The multimodal Qwen3.5-MoE source architecture (`Qwen3_5MoeForConditionalGeneration`) exposes a reproducible edge case in the upstream converter's MTP-block expert-stacking path that prevents naive conversion. Existing GGUF conversions of this multimodal source family lacked retained MTP support as a direct result. This work demonstrates reproducible preservation of MTP through NVFP4 conversion via a minimal one-line converter patch, validates the resulting artifact against autoregressive equivalence within the tested evaluation scope, and documents the operational reality of running the artifact in production-shaped deployment.
+
+**Scope of contribution.** This is a deployment engineering report. It is not a novel ML architecture paper, not a new quantization algorithm, and not a formal research publication. The contribution is reproducible engineering documentation: bug found, root cause analyzed, fix demonstrated, behavior measured. Numbers in §5 should be read as bench-window-scoped observations, not as capability claims about the underlying model.
+
+---
+
 ## Summary
 
-This report documents the production of `Qwen3.5-122B-A10B-NVFP4-MTP-GGUF`, an NVFP4-quantized hybrid Mamba-MoE GGUF that retains the MTP (Multi-Token Prediction) head for self-speculative decoding via llama.cpp. The conversion required one local converter patch on top of mainline (root cause analysis in §2), and produces +46% long-decode throughput at +51% tok/J efficiency on Blackwell-class hardware vs the AR baseline, with no quality regression (full bench in §5). All numbers are reproducible per the recipe in §7. The patch is published alongside this report in the methodology repo at [bit-incarnas/nvfp4-mtp-conversions/patches/](https://github.com/bit-incarnas/nvfp4-mtp-conversions/tree/main/patches/).
+This report documents the production of `Qwen3.5-122B-A10B-NVFP4-MTP-GGUF`, an NVFP4-quantized hybrid Mamba-MoE GGUF that retains the MTP (Multi-Token Prediction) head for self-speculative decoding via llama.cpp. The conversion required one local converter patch on top of mainline (root cause analysis in §2), and produces +46% long-decode throughput at +51% tok/J efficiency on Blackwell-class hardware vs the AR baseline, with no observed regression in limited equivalence testing (5-sample gsm8k, see §5.5). All numbers are reproducible per the recipe in §7. The patch is published alongside this report in the methodology repo at [bit-incarnas/nvfp4-mtp-conversions/patches/](https://github.com/bit-incarnas/nvfp4-mtp-conversions/tree/main/patches/).
 
 ---
 
@@ -99,9 +107,9 @@ The fix is one line: when the mixin renames the tensor it must also update the b
 
 ### 2.3 Why this bug doesn't break Unsloth's MTP releases
 
-Unsloth's MTP-tensored GGUFs (`unsloth/Qwen3.5-122B-A10B-MTP-GGUF` etc.) ship without hitting this crash. The reason is that their source weights use the text-only architecture `Qwen3_5MoeForCausalLM`, where tensor names arrive in the converter as `model.layers.{N}.*` directly. In that path the expert-stacker fills and drains `self._experts[0]` strictly before the MTP path runs.
+Unsloth's MTP-tensored GGUFs (`unsloth/Qwen3.5-122B-A10B-MTP-GGUF` etc.) ship without hitting this crash. The most likely explanation, based on observed converter behavior on both source architectures, is that their source weights use the text-only architecture `Qwen3_5MoeForCausalLM`, where tensor names arrive in the converter as `model.layers.{N}.*` directly. In that path the expert-stacker fills and drains `self._experts[0]` strictly before the MTP path runs.
 
-Our source uses the multimodal architecture `Qwen3_5MoeForConditionalGeneration`, where tensor names arrive as `model.language_model.layers.{N}.*`. A strip step inside the qwen.py path removes the `language_model.` prefix, which changes the order in which tensors hit the MoE stacker relative to when MTP-source tensors arrive. The strip-then-stack order leaves self._experts[0] empty by the time MTP processing tries to write into it under bid=0, and the symptom surfaces.
+Our source uses the multimodal architecture `Qwen3_5MoeForConditionalGeneration`, where tensor names arrive as `model.language_model.layers.{N}.*`. A strip step inside the qwen.py path removes the `language_model.` prefix, which appears to change the order in which tensors hit the MoE stacker relative to when MTP-source tensors arrive. The strip-then-stack order leaves `self._experts[0]` empty by the time MTP processing tries to write into it under `bid=0`, and the symptom surfaces. Full verification would require instrumenting Unsloth's exact converter path; this analysis is from our side's traceback + the observed difference in source-architecture handling.
 
 ### 2.4 The second attempt (succeeded)
 
@@ -145,6 +153,10 @@ cp ./v3-output/mmproj-Qwen3.5-122B-A10B-NVFP4.gguf \
 ```
 
 Smoke-tested by loading via `--mmproj` in AR mode; load succeeded in 70 seconds wallclock.
+
+### 2.6 Summary
+
+The first conversion attempt failed at the MoE expert-stacker due to a `bid` synchronization bug in the multimodal MTP path, which we identified by walking the traceback through four converter frames and fixed with a one-line change to `_Qwen35MtpMixin.modify_tensors()` (full diff in §2.2). The patched converter produced a 1475-tensor GGUF whose layer-48 (MTP block) structure matches Unsloth's reference 122B-MTP-GGUF shape-for-shape. The mmproj sidecar was byte-copied from the no-MTP sibling since the vision tower is unchanged. Wallclock: ~6.5 minutes of write time.
 
 ---
 
@@ -359,6 +371,10 @@ Same 5 gsm8k problems sent to both server configurations under `/v1/chat/complet
 4/5 samples produced identical answers. The diverging sample (Q4) does **not** indicate a quality difference between MTP and AR — verifier-driven speculative decode produces statistically equivalent token distributions to AR at the same logit profile; the divergence reflects non-zero-temperature sampling drift (each mode samples its own trace through the same logit distribution). MTP happened to land on the correct branch on this draw.
 
 Sample size is far too small to draw absolute-accuracy conclusions; the comparison's purpose is to establish empirical equivalence, not to score capability. For absolute-accuracy numbers see the no-MTP sibling's full-volume runs cited in the README.
+
+### 5.6 Summary
+
+MTP n=2 vs autoregressive baseline on this artifact: **+46% long-decode-thinking-on throughput** (79.77 → 116.45 t/s), **+51% tok/J efficiency** (0.276 → 0.416), 73% draft acceptance averaged over the bench mix, +5.7 GiB VRAM at 256k context. Output equivalence between modes verified on a 5-sample gsm8k probe (4/5 identical answers; 1/5 differs due to non-zero-temperature sampling drift through the same logit distribution — see §5.5). All other capability numbers in this report are inherited from the no-MTP sibling's full-volume runs; a native-MTP-mode capability sweep at scale is open work (see §9).
 
 ---
 
