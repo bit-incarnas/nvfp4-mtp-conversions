@@ -5,7 +5,7 @@ Companion to the [README](./README.md). Where the README documents *what* this a
 **Conversion date:** 2026-05-16
 **Conversion target:** llama.cpp commit `0253fb21f` (build `b9187`)
 **Source weights:** [txn545/Qwen3.5-122B-A10B-NVFP4](https://huggingface.co/txn545/Qwen3.5-122B-A10B-NVFP4)
-**Author:** Incarnas (publish pipeline, temple-rig)
+**Author:** Incarnas
 **Methodology repo:** [bit-incarnas/nvfp4-mtp-conversions](https://github.com/bit-incarnas/nvfp4-mtp-conversions) (v1.0)
 **PDF version:** [paper/REPORT.pdf](https://github.com/bit-incarnas/nvfp4-mtp-conversions/blob/main/paper/REPORT.pdf) (pandoc-xelatex render of this markdown source)
 
@@ -54,9 +54,9 @@ Running the upstream mainline converter at commit `0253fb21f` without modificati
 
 ```bash
 python convert_hf_to_gguf.py \
-  --outfile /media/temple/llm_models/qwen3.5-122b-a10b-nvfp4-mtp-gguf/Qwen3.5-122B-A10B-NVFP4-MTP.gguf \
-  --metadata /media/temple/llm_models/qwen3.5-122b-a10b-nvfp4-mtp-gguf/metadata_override.json \
-  /media/temple/llm_models/qwen3.5-122b-a10b-nvfp4-src-modelopt
+  --outfile ./output/Qwen3.5-122B-A10B-NVFP4-MTP.gguf \
+  --metadata ./output/metadata_override.json \
+  ./source/qwen3.5-122b-a10b-nvfp4-modelopt
 ```
 
 This processed all 48 base transformer blocks cleanly, started processing the MTP block (we can see `blk.48.nextn.eh_proj.weight` emit successfully and `blk.48.attn_norm.weight` start), then crashed with:
@@ -111,9 +111,9 @@ With the one-line patch applied:
 # Dry-run first to validate the new tensor count + split plan
 python convert_hf_to_gguf.py \
   --dry-run \
-  --outfile .../Qwen3.5-122B-A10B-NVFP4-MTP.gguf \
-  --metadata .../metadata_override.json \
-  /media/temple/llm_models/qwen3.5-122b-a10b-nvfp4-src-modelopt
+  --outfile ./output/Qwen3.5-122B-A10B-NVFP4-MTP.gguf \
+  --metadata ./output/metadata_override.json \
+  ./source/qwen3.5-122b-a10b-nvfp4-modelopt
 ```
 
 Dry-run output:
@@ -130,7 +130,7 @@ Full conversion (dropping `--dry-run`):
 ```
 Writing: 100%|██████████| 82.0G/82.0G [06:31<00:00, 209MB/s]
 INFO:hf-to-gguf:Model successfully exported to
-  /media/temple/llm_models/qwen3.5-122b-a10b-nvfp4-mtp-gguf/Qwen3.5-122B-A10B-NVFP4-MTP.gguf
+  ./output/Qwen3.5-122B-A10B-NVFP4-MTP.gguf
 ```
 
 Wallclock: 6 minutes 31 seconds. NFS write throughput averaged 209 MB/s (sustained ~265 MB/s up to ~75 GB then dropped to ~115 MB/s for the last 5-7 GiB as NFS write-back caching caught up with the destination volume).
@@ -140,8 +140,8 @@ Wallclock: 6 minutes 31 seconds. NFS write throughput averaged 209 MB/s (sustain
 The vision tower mmproj is **byte-identical** to the no-MTP sibling's mmproj. Rather than re-convert (the vision portion of the source weights is unchanged), we copied:
 
 ```bash
-cp /media/temple/llm_models/qwen3.5-122b-a10b-nvfp4-gguf-v3/mmproj-Qwen3.5-122B-A10B-NVFP4.gguf \
-   /media/temple/llm_models/qwen3.5-122b-a10b-nvfp4-mtp-gguf/
+cp ./v3-output/mmproj-Qwen3.5-122B-A10B-NVFP4.gguf \
+   ./output/
 ```
 
 Smoke-tested by loading via `--mmproj` in AR mode; load succeeded in 70 seconds wallclock.
@@ -216,7 +216,7 @@ Sanity chat-completion (200 tokens, thinking-on): completed cleanly. Server `/me
 | GPU power cap | 300 W (BIOS, vendor default for Max-Q) |
 | CPU | AMD Ryzen Threadripper 7960X (24C / 48T, SMT on) |
 | RAM | 128 GiB DDR5 ECC RDIMM @ 6400 MHz EXPO P1 |
-| Storage (model file) | NFS 4.2 over direct 10 GbE to TrueNAS, `/media/temple` mount |
+| Storage (model file) | NFS 4.2 over 10 GbE link to local NAS |
 | OS | Linux 7.0.0-15-generic |
 | Container runtime | docker + nvidia-container-toolkit |
 | llama.cpp image | locally-built `llamacpp-local:0253fb21f`, from `.devops/cuda.Dockerfile --target server` |
@@ -278,7 +278,7 @@ The full three-phase bench window (MTP n=2 + AR + vision smoke) for this artifac
 
 ## 5. Bench results — full per-test data
 
-All numbers from runs taken 2026-05-16, `b9187` build, the hardware and server config above. JSONs at `/media/ai/reports/bench/v4-nvfp4-{ar,mtp-n2}.json` and `/media/ai/reports/chat-math/v4-nvfp4-{ar,mtp-n2}.json` on the TEMPLE rig. Copies are mirrored into the methodology repo at [`benchmark_results/`](https://github.com/bit-incarnas/nvfp4-mtp-conversions/tree/main/benchmark_results/) for public access.
+All numbers from runs taken 2026-05-16, `b9187` build, the hardware and server config above. JSONs mirrored to this repo at [`benchmark_results/`](https://github.com/bit-incarnas/nvfp4-mtp-conversions/tree/main/benchmark_results/) for public access.
 
 ### 5.1 Decode and prefill
 
@@ -457,13 +457,14 @@ If the deltas come back substantially different from those on similar hardware (
 
 ## 8. Raw artifacts
 
-The bench JSONs and the convert log are not committed to this HF repo (they would balloon repo size and aren't useful without the surrounding harness). They live on the TEMPLE rig at the following absolute paths, and are mirrored into the methodology repo at [`benchmark_results/`](https://github.com/bit-incarnas/nvfp4-mtp-conversions/tree/main/benchmark_results/) for public access:
+The bench JSONs are mirrored into the methodology repo at [`benchmark_results/`](https://github.com/bit-incarnas/nvfp4-mtp-conversions/tree/main/benchmark_results/) for public access:
 
-- `/media/ai/reports/bench/v4-nvfp4-mtp-n2.json` — full MTP n=2 bench output with power.csv sidecar
-- `/media/ai/reports/bench/v4-nvfp4-ar.json` — AR baseline
-- `/media/ai/reports/chat-math/v4-nvfp4-mtp-n2.{json,md}` — gsm8k MTP samples
-- `/media/ai/reports/chat-math/v4-nvfp4-ar.{json,md}` — gsm8k AR samples
-- `/tmp/nvfp4-v4-convert-*.log` — convert log including the failed-then-fixed sequence (transient; not mirrored)
+- `benchmark_results/bench/v4-nvfp4-mtp-n2.json` — full MTP n=2 bench output with power.csv sidecar
+- `benchmark_results/bench/v4-nvfp4-ar.json` — AR baseline
+- `benchmark_results/chat-math/v4-nvfp4-mtp-n2.{json,md}` — gsm8k MTP samples
+- `benchmark_results/chat-math/v4-nvfp4-ar.{json,md}` — gsm8k AR samples
+
+The transient convert log from the failed-then-fixed conversion attempt is not retained in this repo.
 
 If you're running a similar pipeline and would find a public mirror of these artifacts useful (e.g., to validate a regression in a different llama.cpp build), open an issue on the methodology repo at [bit-incarnas/nvfp4-mtp-conversions](https://github.com/bit-incarnas/nvfp4-mtp-conversions) and we can publish a tarball.
 

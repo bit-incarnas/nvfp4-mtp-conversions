@@ -9,4 +9,3 @@
 - **Mean completion tokens**: 1701
 - **Mean reasoning chars**: 4712
 - **Total wall**: 108s (1.8m)
-- **Samples**: `/media/ai/reports/chat-math/v4-nvfp4-ar.samples.jsonl`

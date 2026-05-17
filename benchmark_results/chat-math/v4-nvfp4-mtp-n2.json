@@ -11,6 +11,5 @@
   "mean_elapsed_per_q": 12.965457916259766,
   "mean_completion_tokens": 1603.4,
   "mean_reasoning_chars": 4430.6,
-  "wall_seconds": 64.8289384841919,
-  "samples_path": "/media/ai/reports/chat-math/v4-nvfp4-mtp-n2.samples.jsonl"
+  "wall_seconds": 64.8289384841919
 }
