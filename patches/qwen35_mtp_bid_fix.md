@@ -42,7 +42,7 @@ If `git apply` rejects due to upstream drift in surrounding code, the patch is s
 
 ## Upstream status
 
-**Filed as [ggml-org/llama.cpp#23237](https://github.com/ggml-org/llama.cpp/pull/23237)** (2026-05-17, awaiting review). Branch `fix/qwen35-mtp-multimodal-bid-coherence` on `bit-incarnas/llama.cpp`. Drop this patch when the PR merges + the next methodology release builds off a post-fix mainline commit (see "Drop trigger" below).
+**Merged as [ggml-org/llama.cpp#23237](https://github.com/ggml-org/llama.cpp/pull/23237)** -- filed 2026-05-17, merged 2026-05-18 in commit [`1867a0c69`](https://github.com/ggml-org/llama.cpp/commit/1867a0c6923eaebb7a53965f6cdbc0ace55142a3) on master by `am17an` (original author of the QWEN35MOE_MTP support in PR #22673). Branch `fix/qwen35-mtp-multimodal-bid-coherence` on `bit-incarnas/llama.cpp`. Drop trigger (1/2) satisfied; awaiting (2/2) -- the next methodology release built off a post-fix mainline commit -- see "Drop trigger" below.
 
 ## Drop trigger
 
