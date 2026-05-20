@@ -11,6 +11,15 @@ Companion to the [README](./README.md). Where the README documents *what* this a
 
 ---
 
+> **Status update (2026-05-19):** The converter patch documented and applied throughout
+> this report has been **merged upstream** as [ggml-org/llama.cpp#23237](https://github.com/ggml-org/llama.cpp/pull/23237)
+> in master commit [`1867a0c69`](https://github.com/ggml-org/llama.cpp/commit/1867a0c6923eaebb7a53965f6cdbc0ace55142a3)
+> on 2026-05-18, first contained in release tag `b9208`. The report is preserved as the
+> original bug-discovery and reproduction narrative; readers reproducing against current
+> llama.cpp builds (`b9208+`) no longer need the patch step.
+
+---
+
 ## Why this report exists
 
 Three forces converge to make this a useful artifact for the open-source inference community. Recent llama.cpp support for Multi-Token Prediction (MTP) enables self-speculative decoding that meaningfully accelerates inference on supported architectures. NVIDIA ModelOpt NVFP4 quantization has emerged as a practical deployment format for Blackwell-class GPUs, letting very large MoE models run within single-card VRAM envelopes. The multimodal Qwen3.5-MoE source architecture (`Qwen3_5MoeForConditionalGeneration`) exposes a reproducible edge case in the upstream converter's MTP-block expert-stacking path that prevents naive conversion. Existing GGUF conversions of this multimodal source family lacked retained MTP support as a direct result. This work demonstrates reproducible preservation of MTP through NVFP4 conversion via a minimal one-line converter patch, validates the resulting artifact against autoregressive equivalence within the tested evaluation scope, and documents the operational reality of running the artifact in production-shaped deployment.
@@ -488,7 +497,7 @@ If you're running a similar pipeline and would find a public mirror of these art
 
 ## 9. Future work (open items)
 
-- **Upstream the converter patch.** The one-line fix is straightforward and useful for any future multimodal Qwen3.5-MoE GGUF conversion. TBD whether to file the PR directly or route the fix to a llama.cpp maintainer for upstreaming.
+- **Upstream the converter patch.** **[DONE 2026-05-18]** Merged as [ggml-org/llama.cpp#23237](https://github.com/ggml-org/llama.cpp/pull/23237) in master commit [`1867a0c69`](https://github.com/ggml-org/llama.cpp/commit/1867a0c6923eaebb7a53965f6cdbc0ace55142a3) (first release tag containing the fix: `b9208`). The §7.2 patch step is preserved as the original reproduction recipe; reproducers building from `b9208+` can skip the `git apply` step.
 - **Full 100-sample chat-mode capability sweep under `--spec-type draft-mtp`** to replace the carried-over numbers with native-MTP measurements. Statistical equivalence holds in principle; empirical confirmation at scale would close the loop.
 - **`--spec-draft-n-max` sweep at NVFP4-MTP** beyond n=2 (cross-artifact data on Q4_K_XL and 27B dense supports n=2 as peak; in-artifact verification would be cleaner).
 - **NoLiMa associative-retrieval at long context** under both MTP and AR.
